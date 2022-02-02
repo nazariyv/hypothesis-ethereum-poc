@@ -1,5 +1,12 @@
 gate1_down: public(bool) # False = Up (stopping water), True = Down (letting water through)
 gate2_down: public(bool) # False = Up (stopping water), True = Down (letting water through)
+beneficiary: public(address)
+fee: public(uint256)
+
+@external
+def __init__(new_beneficiary: address, new_fee: uint256):
+    self.beneficiary = new_beneficiary
+    self.fee = new_fee
 
 @external
 def raise_gate(pick_gate1: bool):

@@ -1,5 +1,6 @@
 from hypothesis import strategies as st
 from hypothesis.stateful import RuleBasedStateMachine
+from typing import List, Dict
 
 # from eth.exceptions import (
 #     InvalidInstruction,
@@ -67,31 +68,30 @@ def _deploy_contract(w3, interface, args_st=None):
 
 # * ---------------- BUILD_{deployment, function, txn}_stragies ------------------
 
-# todo: mypy types
-def _build_deployment_strategy(contract_abi):
+# todo: output is the tuple of the abi type strategies
+def _build_deployment_strategy(contract_abi: List[Dict]):
     # contract_abi is a list that describes contract's application binary interface
     # This is an example of what it might look like
-    # [{'stateMutability': 'nonpayable', 'type': 'function', 'name': 'raise_gate',
-    # 'inputs': [{'name': 'pick_gate1', 'type': 'bool'}],
-    # 'outputs': [], 'gas': 20450},
+    # [{'stateMutability': 'nonpayable', 'type': 'constructor',
+    # 'inputs': [{'name': 'new_beneficiary', 'type': 'address'}, {'name': 'new_fee', 'type': 'uint256'}],
+    # 'outputs': []}
     # {'stateMutability': 'nonpayable', 'type': 'function', 'name': 'lower_gate',
     # 'inputs': [{'name': 'pick_gate1', 'type': 'bool'}],
     # 'outputs': [], 'gas': 37671},
     # {'stateMutability': 'view', 'type': 'function', 'name': 'gate1_down',
     # 'inputs': [],
-    # 'outputs': [{'name': '', 'type': 'bool'}], 'gas': 2520},
-    # {'stateMutability': 'view', 'type': 'function', 'name': 'gate2_down',
-    # 'inputs': [],
-    # 'outputs': [{'name': '', 'type': 'bool'}], 'gas': 2550}]
+    # 'outputs': [{'name': '', 'type': 'bool'}], 'gas': 2520}]
 
     # Obtain the constructor from the ABI, if one exists
     constructor_fn_abi = [fn for fn in contract_abi if fn['type'] == 'constructor']
 
     # Terminates earlier if the length is zero.
     if len(constructor_fn_abi) == 0: return None  # Return no strategy (empty set)
-    assert len(constructor_fn_abi) < 2, "This should never happen, but check anyways"
+    assert len(constructor_fn_abi) == 1, "More than one constructor. This should never happen."
 
-    constructor_inputs = constructor_fn_abi[0]['inputs']
+    # Example of constructor_inputs:
+    # [{'name': 'new_beneficiary', 'type': 'address'}, {'name': 'new_fee', 'type': 'uint256'}]
+    constructor_inputs: List[Dict] = constructor_fn_abi[0]['inputs']
 
     # Return the constructor's ABI deployment strategy list
     return tuple([get_abi_strategy(arg['type']) for arg in constructor_inputs])
