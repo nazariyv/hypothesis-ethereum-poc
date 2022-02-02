@@ -18,8 +18,7 @@ from web3 import (
     EthereumTesterProvider,
 )
 
-class TransactionFailed(Exception):
-    pass
+class TransactionFailed(Exception): pass
 
 def _validate_interface(interface):
     interface_members = interface.keys()
@@ -66,18 +65,36 @@ def _deploy_contract(w3, interface, args_st=None):
     address = w3.eth.waitForTransactionReceipt(txn_hash)['contractAddress']
     return w3.eth.contract(address, **interface)
 
+# * ---------------- BUILD_{deployment, function, txn}_stragies ------------------
 
+# todo: mypy types
 def _build_deployment_strategy(contract_abi):
+    # contract_abi is a list that describes contract's application binary interface
+    # This is an example of what it might look like
+    # [{'stateMutability': 'nonpayable', 'type': 'function', 'name': 'raise_gate',
+    # 'inputs': [{'name': 'pick_gate1', 'type': 'bool'}],
+    # 'outputs': [], 'gas': 20450},
+    # {'stateMutability': 'nonpayable', 'type': 'function', 'name': 'lower_gate',
+    # 'inputs': [{'name': 'pick_gate1', 'type': 'bool'}],
+    # 'outputs': [], 'gas': 37671},
+    # {'stateMutability': 'view', 'type': 'function', 'name': 'gate1_down',
+    # 'inputs': [],
+    # 'outputs': [{'name': '', 'type': 'bool'}], 'gas': 2520},
+    # {'stateMutability': 'view', 'type': 'function', 'name': 'gate2_down',
+    # 'inputs': [],
+    # 'outputs': [{'name': '', 'type': 'bool'}], 'gas': 2550}]
+
     # Obtain the constructor from the ABI, if one exists
-    fn_abi = [fn for fn in contract_abi if fn['type'] == 'constructor']
-    
-    assert len(fn_abi) < 2, "This should never happen, but check anyways"
-    
-    if len(fn_abi) == 0:
-        return None  # Return no strategy (empty set)
-    
+    constructor_fn_abi = [fn for fn in contract_abi if fn['type'] == 'constructor']
+
+    # Terminates earlier if the length is zero.
+    if len(constructor_fn_abi) == 0: return None  # Return no strategy (empty set)
+    assert len(constructor_fn_abi) < 2, "This should never happen, but check anyways"
+
+    constructor_inputs = constructor_fn_abi[0]['inputs']
+
     # Return the constructor's ABI deployment strategy list
-    return tuple([get_abi_strategy(arg['type']) for arg in fn_abi[0]['inputs']])
+    return tuple([get_abi_strategy(arg['type']) for arg in constructor_inputs])
 
 
 def _build_fn_strategies(contract_abi):
@@ -101,6 +118,7 @@ def _build_txn_strategies(contract, fn_sts):
     # The transaction strategy is one of the available state-modifying calls
     return st.one_of([build_call(fn, args_sts) for fn, args_sts in fn_sts])
 
+# -----------------------------------------------------------------------------
 
 def build_test(interface):
     # Ensure we have a valid interface dict
