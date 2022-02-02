@@ -1,6 +1,6 @@
 from hypothesis import strategies as st
 from hypothesis.stateful import RuleBasedStateMachine
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 # from eth.exceptions import (
 #     InvalidInstruction,
@@ -68,8 +68,7 @@ def _deploy_contract(w3, interface, args_st=None):
 
 # * ---------------- BUILD_{deployment, function, txn}_stragies ------------------
 
-# todo: output is the tuple of the abi type strategies
-def _build_deployment_strategy(contract_abi: List[Dict]):
+def _build_deployment_strategy(contract_abi: List[Dict]) -> Tuple[st.SearchStrategy]:
     # contract_abi is a list that describes contract's application binary interface
     # This is an example of what it might look like
     # [{'stateMutability': 'nonpayable', 'type': 'constructor',
